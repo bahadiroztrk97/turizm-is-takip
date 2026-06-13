@@ -2,24 +2,11 @@ import os
 import requests
 
 TOKEN = os.environ["TELEGRAM_TOKEN"]
-CHAT_ID = os.environ["CHAT_ID"]
 
-message = """
-🎉 Turizm İş Takip Sistemi Aktif
+print("TOKEN UZUNLUGU:", len(TOKEN))
 
-GitHub Actions başarılı şekilde çalışıyor.
+url = f"https://api.telegram.org/bot{TOKEN}/getMe"
 
-Bir sonraki aşamada gerçek iş ilanlarını taramaya başlayacağız.
-"""
-
-url = f"https://api.telegram.org/bot{TOKEN}/sendMessage"
-
-response = requests.post(
-    url,
-    data={
-        "chat_id": CHAT_ID,
-        "text": message
-    }
-)
+response = requests.get(url)
 
 print(response.text)
