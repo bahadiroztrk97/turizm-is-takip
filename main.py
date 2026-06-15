@@ -1,25 +1,133 @@
-import os
 import requests
+import json
+import os
+from bs4 import BeautifulSoup
 
-TOKEN = os.environ["TELEGRAM_TOKEN"]
-CHAT_ID = os.environ["CHAT_ID"]
+BOT_TOKEN = os.getenv("BOT_TOKEN")
+CHAT_ID = os.getenv("CHAT_ID")
 
-message = """
-🎉 Turizm İş Takip Sistemi Aktif
+SEARCH_URLS = [
+    "https://www.kariyer.net/is-ilanlari?kw=turizm%20kontrat"
+]
 
-GitHub Actions başarılı şekilde çalışıyor.
+KEYWORDS = [
+    "kontrat",
+    "contract",
+    "contracting",
+    "operasyon",
+    "operation",
+    "vip",
+    "product",
+    "incoming",
+    "destination"
+]
 
-Bir sonraki aşamada gerçek iş ilanlarını taramaya başlayacağız.
-"""
+COMPANIES = [
+    "setur",
+    "ets",
+    "jolly",
+    "tatilbudur",
+    "prontotour",
+    "tatilsepeti",
+    "coral",
+    "odeon"
+]
 
-url = f"https://api.telegram.org/bot{TOKEN}/sendMessage"
 
-response = requests.post(
-    url,
-    data={
-        "chat_id": CHAT_ID,
-        "text": message
+def send_telegram(message):
+    url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
+
+    requests.post(
+        url,
+        data={
+            "chat_id": CHAT_ID,
+            "text": message
+        },
+        timeout=30
+    )
+
+
+def load_jobs():
+    if not os.path.exists("jobs.json"):
+        return []
+
+    with open("jobs.json", "r", encoding="utf-8") as f:
+        return json.load(f)
+
+
+def save_jobs(data):
+    with open("jobs.json", "w", encoding="utf-8") as f:
+        json.dump(data, f, ensure_ascii=False, indent=2)
+
+
+def is_relevant(title):
+    title = title.lower()
+
+    if any(keyword in title for keyword in KEYWORDS):
+        return True
+
+    if any(company in title for company in COMPANIES):
+        return True
+
+    return False
+
+
+def scrape():
+    known_jobs = load_jobs()
+    new_jobs = []
+
+    headers = {
+        "User-Agent": "Mozilla/5.0"
     }
-)
 
-print(response.text)
+    for url in SEARCH_URLS:
+        response = requests.get(url, headers=headers, timeout=30)
+
+        soup = BeautifulSoup(response.text, "lxml")
+
+        links = soup.find_all("a")
+
+        for link in links:
+            href = link.get("href")
+
+            if not href:
+                continue
+
+            if "/is-ilani/" not in href:
+                continue
+
+            title = link.get_text(strip=True)
+
+            if not title:
+                continue
+
+            if not is_relevant(title):
+                continue
+
+            full_url = "https://www.kariyer.net" + href
+
+            if full_url in known_jobs:
+                continue
+
+            known_jobs.append(full_url)
+            new_jobs.append((title, full_url))
+
+    save_jobs(known_jobs)
+
+    return new_jobs
+
+
+def main():
+    jobs = scrape()
+
+    if not jobs:
+        return
+
+    for title, url in jobs:
+        send_telegram(
+            f"Yeni ilan bulundu\n\n{title}\n{url}"
+        )
+
+
+if __name__ == "__main__":
+    main()
