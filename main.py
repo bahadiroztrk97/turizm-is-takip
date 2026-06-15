@@ -81,8 +81,10 @@ def scrape():
     }
 
     for url in SEARCH_URLS:
-        response = requests.get(url, headers=headers, timeout=30)
+       response = requests.get(url, headers=headers, timeout=30)
 
+print(response.status_code)
+print(response.text[:5000])
         soup = BeautifulSoup(response.text, "lxml")
 
         links = soup.find_all("a")
@@ -133,7 +135,4 @@ if __name__ == "__main__":
     main()
 
 
-response = requests.get(url, headers=headers, timeout=30)
 
-print(response.status_code)
-print(response.text[:5000])
