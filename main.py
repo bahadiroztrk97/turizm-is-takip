@@ -81,42 +81,44 @@ def scrape():
     }
 
     for url in SEARCH_URLS:
-       response = requests.get(url, headers=headers, timeout=30)
+    response = requests.get(url, headers=headers, timeout=30)
 
-print(response.status_code)
-print(response.text[:5000])
-        soup = BeautifulSoup(response.text, "lxml")
+    print(response.status_code)
+    print(response.text[:5000])
 
-        links = soup.find_all("a")
+    soup = BeautifulSoup(response.text, "lxml")
 
-        for link in links:
-            href = link.get("href")
+    links = soup.find_all("a")
 
-            if not href:
-                continue
+    print("Bulunan link sayısı:", len(links))
 
-            if "/is-ilani/" not in href:
-                continue
+    for link in links[:20]:
+        print(link.get("href"))
 
-            title = link.get_text(strip=True)
+    for link in links:
+        href = link.get("href")
 
-            if not title:
-                continue
+        if not href:
+            continue
 
-            if not is_relevant(title):
-                continue
+        if "/is-ilani/" not in href:
+            continue
 
-            full_url = "https://www.kariyer.net" + href
+        title = link.get_text(strip=True)
 
-            if full_url in known_jobs:
-                continue
+        if not title:
+            continue
 
-            known_jobs.append(full_url)
-            new_jobs.append((title, full_url))
+        if not is_relevant(title):
+            continue
 
-    save_jobs(known_jobs)
+        full_url = "https://www.kariyer.net" + href
 
-    return new_jobs
+        if full_url in known_jobs:
+            continue
+
+        known_jobs.append(full_url)
+        new_jobs.append((title, full_url))
 
 
 def main():
