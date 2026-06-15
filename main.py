@@ -79,8 +79,7 @@ def scrape():
     headers = {
         "User-Agent": "Mozilla/5.0"
     }
-
-    for url in SEARCH_URLS:
+for url in SEARCH_URLS:
     response = requests.get(url, headers=headers, timeout=30)
 
     print(response.status_code)
