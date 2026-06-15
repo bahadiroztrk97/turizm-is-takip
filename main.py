@@ -77,56 +77,82 @@ def scrape():
     new_jobs = []
 
     headers = {
-        "User-Agent": "Mozilla/5.0"
+        "User-Agent": (
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+            "AppleWebKit/537.36 (KHTML, like Gecko) "
+            "Chrome/125.0.0.0 Safari/537.36"
+        )
     }
-for url in SEARCH_URLS:
-    response = requests.get(url, headers=headers, timeout=30)
 
-    print(response.status_code)
-    print(response.text[:5000])
+    for url in SEARCH_URLS:
 
-    soup = BeautifulSoup(response.text, "lxml")
+        print("=" * 50)
+        print("URL:", url)
 
-    links = soup.find_all("a")
+        response = requests.get(
+            url,
+            headers=headers,
+            timeout=30
+        )
 
-    print("Bulunan link sayısı:", len(links))
+        print("Status:", response.status_code)
 
-    for link in links[:20]:
-        print(link.get("href"))
+        print("\nİlk 3000 karakter:\n")
+        print(response.text[:3000])
 
-    for link in links:
-        href = link.get("href")
+        soup = BeautifulSoup(response.text, "lxml")
 
-        if not href:
-            continue
+        links = soup.find_all("a")
 
-        if "/is-ilani/" not in href:
-            continue
+        print("\nBulunan link sayısı:", len(links))
 
-        title = link.get_text(strip=True)
+        print("\nİlk 20 link:")
+        for link in links[:20]:
+            print(link.get("href"))
 
-        if not title:
-            continue
+        for link in links:
 
-        if not is_relevant(title):
-            continue
+            href = link.get("href")
 
-        full_url = "https://www.kariyer.net" + href
+            if not href:
+                continue
 
-        if full_url in known_jobs:
-            continue
+            if "/is-ilani/" not in href:
+                continue
 
-        known_jobs.append(full_url)
-        new_jobs.append((title, full_url))
+            title = link.get_text(strip=True)
+
+            if not title:
+                continue
+
+            if not is_relevant(title):
+                continue
+
+            if href.startswith("http"):
+                full_url = href
+            else:
+                full_url = "https://www.kariyer.net" + href
+
+            if full_url in known_jobs:
+                continue
+
+            known_jobs.append(full_url)
+            new_jobs.append((title, full_url))
+
+    save_jobs(known_jobs)
+
+    return new_jobs
 
 
 def main():
     jobs = scrape()
 
-    if not jobs:
-        return
+    print("\nYeni ilan sayısı:", len(jobs))
 
     for title, url in jobs:
+
+        print("Yeni ilan:", title)
+
         send_telegram(
             f"Yeni ilan bulundu\n\n{title}\n{url}"
         )
@@ -134,6 +160,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-
-
