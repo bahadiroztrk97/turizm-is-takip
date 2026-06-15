@@ -131,3 +131,9 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+
+response = requests.get(url, headers=headers, timeout=30)
+
+print(response.status_code)
+print(response.text[:5000])
